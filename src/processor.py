@@ -32,7 +32,7 @@ class Samprocessor:
         # Transform input prompts
         box_torch = self.process_prompt(prompt, original_size)
         
-        # 处理掩码提示词（如果提供）
+        # Process the mask prompt, if provided.
         mask_input_torch = None
         if mask_prompt is not None:
             mask_input_torch = self.process_mask_prompt(mask_prompt, original_size)
@@ -42,7 +42,7 @@ class Samprocessor:
                  "boxes": box_torch,
                  "prompt" : prompt}
         
-        # 添加掩码提示词（如果存在）
+        # Add the mask prompt, if available.
         if mask_input_torch is not None:
             inputs["mask_inputs"] = mask_input_torch
         
@@ -91,44 +91,44 @@ class Samprocessor:
 
     def process_mask_prompt(self, mask: np.ndarray, original_size: tuple) -> torch.tensor:
         """
-        预处理掩码提示词，将掩码调整到SAM的输入尺寸（256x256）
+        Resize a mask prompt to the SAM mask input size (256x256).
         
         Arguments:
-            mask: 掩码数组，形状为[H, W]，值为0或1
-            original_size: 原始图像尺寸 (H, W)
+            mask: Binary mask array of shape [H, W].
+            original_size: Original image size (H, W).
         
         Return:
-            (tensor): 处理后的掩码张量，形状为[1, 1, 256, 256]
+            (tensor): Processed mask tensor of shape [1, 1, 256, 256].
         """
         import torch.nn.functional as F
         
-        # 确保是numpy数组
+        # Ensure the mask is a NumPy array.
         if isinstance(mask, torch.Tensor):
             mask = mask.cpu().numpy()
         
-        # 确保是连续数组且类型正确
+        # Ensure a contiguous array with the correct dtype.
         mask = np.ascontiguousarray(mask, dtype=np.float32)
         
-        # 如果是[H, W]形状，添加通道维度
+        # Add a channel dimension to an [H, W] mask.
         if len(mask.shape) == 2:
             mask = mask[np.newaxis, ...]  # [1, H, W]
         elif len(mask.shape) == 3:
-            # 如果是[H, W, 1]或[1, H, W]，确保是[1, H, W]
+            # Convert [H, W, 1] or [1, H, W] to [1, H, W].
             if mask.shape[0] != 1:
-                mask = mask.transpose(2, 0, 1)[:1, ...]  # 取第一个通道
+                mask = mask.transpose(2, 0, 1)[:1, ...]  # Select the first channel.
         
-        # 在添加维度后再次确保连续性
+        # Ensure contiguous storage after adding dimensions.
         mask = np.ascontiguousarray(mask, dtype=np.float32)
         
-        # 调整到256x256（SAM的mask_input标准尺寸）
-        # 使用torch.tensor而不是torch.from_numpy，更可靠
+        # Resize to 256x256, the standard SAM mask input size.
+        # Use torch.tensor instead of torch.from_numpy for a reliable copy.
         mask_tensor = torch.tensor(mask, dtype=torch.float32)  # [1, H, W]
         if mask_tensor.dim() == 2:
             mask_tensor = mask_tensor.unsqueeze(0)  # [1, H, W]
         mask_tensor = mask_tensor.unsqueeze(0)  # [1, 1, H, W]
         mask_resized = F.interpolate(mask_tensor, size=(256, 256), mode='bilinear', align_corners=False)
         
-        # 确保在正确的设备上
+        # Move the tensor to the correct device.
         mask_resized = mask_resized.to(self.device)
         
         return mask_resized  # [1, 1, 256, 256]

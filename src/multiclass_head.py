@@ -3,7 +3,7 @@ import torch.nn as nn
 
 
 def _pick_group_count(num_channels: int) -> int:
-    """为 GroupNorm 选择一个能整除通道数的组数。"""
+    """Choose a GroupNorm group count that divides the channel count."""
     for groups in (8, 4, 2):
         if num_channels % groups == 0:
             return groups
@@ -12,13 +12,13 @@ def _pick_group_count(num_channels: int) -> int:
 
 class MulticlassHead(nn.Module):
     """
-    将 SAM 的 mask logits 转换为多类别分割 logits。
+    Convert SAM mask logits into multiclass segmentation logits.
 
-    结构:
-    1. 两层 3x3 卷积提取局部上下文
-    2. GroupNorm 适配 batch_size=1 的训练
-    3. Dropout2d 抑制过拟合
-    4. 残差分支保留原始 mask logits 的可分性
+    Architecture:
+    1. Two 3x3 convolutions extract local context.
+    2. GroupNorm supports training with batch_size=1.
+    3. Dropout2d reduces overfitting.
+    4. A residual branch preserves information from the input mask logits.
     """
 
     def __init__(self, num_classes=4, in_channels=1, hidden_channels=32, dropout=0.1):
@@ -44,14 +44,14 @@ class MulticlassHead(nn.Module):
 
     def forward(self, mask_logits: torch.Tensor) -> torch.Tensor:
         """
-        参数:
-            mask_logits: [B,1,H,W] 或 [B,C,H,W] 的 mask logits
+        Arguments:
+            mask_logits: Mask logits of shape [B,1,H,W] or [B,C,H,W].
 
-        返回:
-            class_logits: [B,num_classes,H,W] 的多类别 logits
+        Returns:
+            class_logits: Multiclass logits of shape [B,num_classes,H,W].
         """
         if mask_logits.dim() != 4:
-            raise ValueError(f"mask_logits 应为 4 维张量，实际收到 shape={tuple(mask_logits.shape)}")
+            raise ValueError(f"mask_logits must be a 4D tensor; received shape={tuple(mask_logits.shape)}")
 
         if mask_logits.size(1) > 1:
             mask_logits = mask_logits[:, 0:1, :, :]

@@ -10,7 +10,7 @@ import src.utils as utils
 
 
 def clean_path(path_str):
-    """清理路径字符串，去除可能的 r"..." 或引号"""
+    """Strip surrounding quotes and optional raw-string notation from a path."""
     path_str = str(path_str).strip()
     if path_str.startswith('r"') and path_str.endswith('"'):
         path_str = path_str[2:-1]
@@ -28,12 +28,12 @@ class DatasetSegmentation(Dataset):
     Dataset to process the images and masks
 
     Arguments:
-        config_file (dict): 含 DATASET 路径
-        processor (Samprocessor): 图像与 bbox 预处理
+        config_file (dict): Configuration containing DATASET paths.
+        processor (Samprocessor): Image and bounding-box preprocessing.
         mode (str): "train" | "val" | "test"
 
     Return:
-        dict: image, original_size, boxes, ground_truth_mask（及 processor 生成的键）
+        dict: image, original_size, boxes, ground_truth_mask, and processor outputs.
     """
 
     def __init__(self, config_file: dict, processor: Samprocessor, mode: str):
@@ -45,9 +45,9 @@ class DatasetSegmentation(Dataset):
             masks_dir = os.path.join(train_path, 'masks')
 
             if not os.path.exists(images_dir):
-                raise ValueError(f"训练集图像目录不存在: {images_dir}")
+                raise ValueError(f"Training image directory does not exist: {images_dir}")
             if not os.path.exists(masks_dir):
-                raise ValueError(f"训练集掩码目录不存在: {masks_dir}")
+                raise ValueError(f"Training mask directory does not exist: {masks_dir}")
 
             img_files_set = set()
             for ext in ['*.jpg', '*.jpeg', '*.png', '*.JPG', '*.JPEG', '*.PNG']:
@@ -57,7 +57,7 @@ class DatasetSegmentation(Dataset):
             self.img_files = sorted(list(img_files_set))
 
             if len(self.img_files) == 0:
-                raise ValueError(f"在 {images_dir} 中未找到任何图像文件（支持jpg、jpeg、png格式）")
+                raise ValueError(f"No image files found in {images_dir} (supported formats: jpg, jpeg, png)")
 
             valid_pairs = []
             for img_path in self.img_files:
@@ -73,16 +73,16 @@ class DatasetSegmentation(Dataset):
                 if mask_path:
                     valid_pairs.append((img_path, mask_path))
                 else:
-                    print(f"警告: 未找到图像 {img_path} 对应的掩码文件")
+                    print(f"Warning: No matching mask found for image {img_path}")
 
             if len(valid_pairs) == 0:
-                raise ValueError(f"在 {masks_dir} 中未找到任何掩码文件")
+                raise ValueError(f"No mask files found in {masks_dir}")
 
             self.img_files, self.mask_files = zip(*valid_pairs)
             self.img_files = list(self.img_files)
             self.mask_files = list(self.mask_files)
 
-            print(f"✓ 加载训练集: 找到 {len(self.img_files)} 个图像-掩码对 (共 {len(self.img_files)} 对)")
+            print(f"✓ Loaded training set: {len(self.img_files)} image-mask pairs ({len(self.img_files)} pairs in total)")
         elif mode == "val":
             val_path = config_file["DATASET"].get("VAL_PATH", None)
             if val_path is None:
@@ -95,9 +95,9 @@ class DatasetSegmentation(Dataset):
             masks_dir = os.path.join(val_path, 'masks')
 
             if not os.path.exists(images_dir):
-                raise ValueError(f"验证集图像目录不存在: {images_dir}")
+                raise ValueError(f"Validation image directory does not exist: {images_dir}")
             if not os.path.exists(masks_dir):
-                raise ValueError(f"验证集掩码目录不存在: {masks_dir}")
+                raise ValueError(f"Validation mask directory does not exist: {masks_dir}")
 
             img_files_set = set()
             for ext in ['*.jpg', '*.jpeg', '*.png', '*.JPG', '*.JPEG', '*.PNG']:
@@ -106,7 +106,7 @@ class DatasetSegmentation(Dataset):
             self.img_files = sorted(list(img_files_set))
 
             if len(self.img_files) == 0:
-                raise ValueError(f"在 {images_dir} 中未找到任何图像文件")
+                raise ValueError(f"No image files found in {images_dir}")
 
             valid_pairs = []
             for img_path in self.img_files:
@@ -123,13 +123,13 @@ class DatasetSegmentation(Dataset):
                     valid_pairs.append((img_path, mask_path))
 
             if len(valid_pairs) == 0:
-                raise ValueError(f"在 {masks_dir} 中未找到任何掩码文件")
+                raise ValueError(f"No mask files found in {masks_dir}")
 
             self.img_files, self.mask_files = zip(*valid_pairs)
             self.img_files = list(self.img_files)
             self.mask_files = list(self.mask_files)
 
-            print(f"✓ 加载验证集: 找到 {len(self.img_files)} 个图像-掩码对 (共 {len(self.img_files)} 对)")
+            print(f"✓ Loaded validation set: {len(self.img_files)} image-mask pairs ({len(self.img_files)} pairs in total)")
         else:  # test mode
             test_path = clean_path(config_file["DATASET"]["TEST_PATH"])
 
@@ -137,9 +137,9 @@ class DatasetSegmentation(Dataset):
             masks_dir = os.path.join(test_path, 'masks')
 
             if not os.path.exists(images_dir):
-                raise ValueError(f"测试集图像目录不存在: {images_dir}")
+                raise ValueError(f"Test image directory does not exist: {images_dir}")
             if not os.path.exists(masks_dir):
-                raise ValueError(f"测试集掩码目录不存在: {masks_dir}")
+                raise ValueError(f"Test mask directory does not exist: {masks_dir}")
 
             img_files_set = set()
             for ext in ['*.jpg', '*.jpeg', '*.png', '*.JPG', '*.JPEG', '*.PNG']:
@@ -149,7 +149,7 @@ class DatasetSegmentation(Dataset):
             self.img_files = sorted(list(img_files_set))
 
             if len(self.img_files) == 0:
-                raise ValueError(f"在 {images_dir} 中未找到任何图像文件")
+                raise ValueError(f"No image files found in {images_dir}")
 
             valid_pairs = []
             for img_path in self.img_files:
@@ -166,13 +166,13 @@ class DatasetSegmentation(Dataset):
                     valid_pairs.append((img_path, mask_path))
 
             if len(valid_pairs) == 0:
-                raise ValueError(f"在 {masks_dir} 中未找到任何掩码文件")
+                raise ValueError(f"No mask files found in {masks_dir}")
 
             self.img_files, self.mask_files = zip(*valid_pairs)
             self.img_files = list(self.img_files)
             self.mask_files = list(self.mask_files)
 
-            print(f"✓ 加载测试集: 找到 {len(self.img_files)} 个图像-掩码对 (共 {len(self.img_files)} 对)")
+            print(f"✓ Loaded test set: {len(self.img_files)} image-mask pairs ({len(self.img_files)} pairs in total)")
 
         self.processor = processor
 
@@ -190,8 +190,8 @@ class DatasetSegmentation(Dataset):
         original_size = tuple(image.size)[::-1]  # PIL (W,H) -> (H,W)
         if mask_array.shape[:2] != (original_size[0], original_size[1]):
             raise ValueError(
-                f"图像与掩码空间尺寸不一致: {img_path} 图像 HW={original_size}, "
-                f"掩码 {mask_path} shape={mask_array.shape[:2]}"
+                f"Image and mask spatial dimensions do not match: {img_path} image HW={original_size}, "
+                f"mask {mask_path} shape={mask_array.shape[:2]}"
             )
 
         ground_truth_mask = utils.rgb_mask_to_class_mask(mask_array)

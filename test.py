@@ -1,5 +1,5 @@
 """
-单张图像测试脚本 - 图像篡改检测（与训练一致：整图 bbox，无形状提示 / 无 mask_inputs）
+Single-image tampering localization (full-image bbox, no shape prompt or mask_inputs, as in training).
 """
 import os
 
@@ -16,7 +16,7 @@ from src.multiclass_head import MulticlassHead
 from src.processor import Samprocessor
 from src.segment_anything import build_sam_vit_b
 
-# ==================== 配置参数 ====================
+# ==================== Configuration ====================
 IMAGE_PATH = "./all_dataset/test/images/P1726.png"
 
 CONFIG_FILE = "./config.yaml"
@@ -45,10 +45,10 @@ def find_latest_training_result(base_dir="./training_results"):
 
 
 def load_model(config_file, sam_checkpoint, training_result_dir, lora_weights, multiclass_head_weights, device):
-    print("正在加载模型...")
+    print("Loading model...")
 
     if training_result_dir and os.path.exists(training_result_dir):
-        print(f"从训练结果目录加载: {training_result_dir}")
+        print(f"Loading from training result directory: {training_result_dir}")
         if lora_weights is None:
             rank = config_file["SAM"]["RANK"]
             lora_weights = os.path.join(training_result_dir, f"lora_rank{rank}.safetensors")
@@ -59,21 +59,21 @@ def load_model(config_file, sam_checkpoint, training_result_dir, lora_weights, m
                 ]
                 if lora_files:
                     lora_weights = os.path.join(training_result_dir, lora_files[0])
-                    print(f"  找到LoRA文件: {lora_files[0]}")
+                    print(f"  Found LoRA file: {lora_files[0]}")
 
         if multiclass_head_weights is None:
             multiclass_head_weights = os.path.join(training_result_dir, "multiclass_head.pth")
             if not os.path.exists(multiclass_head_weights):
                 best_model_path = os.path.join(training_result_dir, "checkpoints", "best_model.pth")
                 if os.path.exists(best_model_path):
-                    print("  从 best_model.pth 中提取 multiclass_head 权重...")
+                    print("  Extracting multiclass_head weights from best_model.pth...")
                     checkpoint = torch.load(best_model_path, map_location=device)
                     if "multiclass_head_state_dict" in checkpoint:
                         multiclass_head_weights = os.path.join(
                             training_result_dir, "multiclass_head_from_best.pth"
                         )
                         torch.save(checkpoint["multiclass_head_state_dict"], multiclass_head_weights)
-                        print(f"  已保存到: {multiclass_head_weights}")
+                        print(f"  Saved to: {multiclass_head_weights}")
 
     sam = build_sam_vit_b(checkpoint=sam_checkpoint)
     rank = config_file["SAM"]["RANK"]
@@ -81,9 +81,9 @@ def load_model(config_file, sam_checkpoint, training_result_dir, lora_weights, m
 
     if lora_weights and os.path.exists(lora_weights):
         sam_lora.load_lora_parameters(lora_weights)
-        print(f"✓ 已加载 LoRA: {lora_weights}")
+        print(f"✓ Loaded LoRA: {lora_weights}")
     else:
-        print(f"警告: 未找到 LoRA 文件: {lora_weights}")
+        print(f"Warning: LoRA file not found: {lora_weights}")
 
     model = sam_lora.sam
     model.eval()
@@ -92,9 +92,9 @@ def load_model(config_file, sam_checkpoint, training_result_dir, lora_weights, m
     multiclass_head = MulticlassHead(num_classes=4, in_channels=1)
     if multiclass_head_weights and os.path.exists(multiclass_head_weights):
         multiclass_head.load_state_dict(torch.load(multiclass_head_weights, map_location=device))
-        print(f"✓ 已加载分类头: {multiclass_head_weights}")
+        print(f"✓ Loaded classification head: {multiclass_head_weights}")
     else:
-        raise FileNotFoundError(f"找不到分类头权重: {multiclass_head_weights}")
+        raise FileNotFoundError(f"Classification head weights not found: {multiclass_head_weights}")
 
     multiclass_head.eval()
     multiclass_head.to(device)
@@ -102,8 +102,8 @@ def load_model(config_file, sam_checkpoint, training_result_dir, lora_weights, m
 
 
 def predict_image(model, multiclass_head, processor, image_path, device):
-    """整图 bbox，与 DatasetSegmentation / 训练一致。"""
-    print(f"正在处理: {image_path}")
+    """Use a full-image bbox, matching DatasetSegmentation and training."""
+    print(f"Processing: {image_path}")
     image = Image.open(image_path)
     if image.mode != "RGB":
         image = image.convert("RGB")
@@ -145,7 +145,7 @@ def save_results(pred_mask, class_probs, image_array, output_dir, mask_name, vis
     rgb_mask = utils.class_mask_to_rgb_mask(pred_mask)
     mask_path = os.path.join(output_dir, mask_name)
     Image.fromarray(rgb_mask).save(mask_path)
-    print(f"✓ 掩码: {mask_path}")
+    print(f"✓ Mask: {mask_path}")
 
     fig, axes = plt.subplots(2, 2, figsize=(12, 12))
     axes[0, 0].imshow(image_array)
@@ -171,24 +171,24 @@ def save_results(pred_mask, class_probs, image_array, output_dir, mask_name, vis
     vis_path = os.path.join(output_dir, vis_name)
     plt.savefig(vis_path, dpi=150, bbox_inches="tight")
     plt.close()
-    print(f"✓ 可视化: {vis_path}")
+    print(f"✓ Visualization: {vis_path}")
 
-    print("\n预测统计:")
+    print("\nPrediction statistics:")
     for class_id, class_name in utils.TAMPER_NAMES.items():
         n = np.sum(pred_mask == class_id)
-        print(f"  {class_name}: {n} 像素 ({100.0 * n / pred_mask.size:.2f}%)")
+        print(f"  {class_name}: {n} pixels ({100.0 * n / pred_mask.size:.2f}%)")
 
 
 def main():
     print("=" * 50)
-    print("单张图像测试（无形状提示）")
+    print("Single-image inference (no shape prompt)")
     print("=" * 50)
 
     if not os.path.exists(IMAGE_PATH):
-        print(f"错误: 找不到图像 {IMAGE_PATH}")
+        print(f"Error: Image not found: {IMAGE_PATH}")
         return
     if not os.path.exists(CONFIG_FILE):
-        print(f"错误: 找不到配置 {CONFIG_FILE}")
+        print(f"Error: Configuration not found: {CONFIG_FILE}")
         return
 
     with open(CONFIG_FILE, "r", encoding="utf-8") as f:
@@ -199,7 +199,7 @@ def main():
         latest = find_latest_training_result()
         if latest:
             training_result_dir = latest
-            print(f"使用最新训练目录: {training_result_dir}")
+            print(f"Using latest training directory: {training_result_dir}")
 
     model, multiclass_head = load_model(
         config_file,
@@ -224,7 +224,7 @@ def main():
         f"{base}_predicted_mask.png",
         f"{base}_visualization.png",
     )
-    print("完成。")
+    print("Done.")
 
 
 if __name__ == "__main__":
