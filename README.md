@@ -1,4 +1,5 @@
 # SAM-LoRA 遥感图像篡改定位
+论文标题：Dataset of RS-TID: A Remote Sensing Tampered Image Dataset for Multi-class Tampering Localization and Detection
 
 基于 Segment Anything Model（SAM ViT-B）与 LoRA 的像素级遥感图像篡改定位代码，支持复制-移动（copy-move）、拼接（splicing）和移除（remove）三类篡改区域的分割。
 
@@ -67,7 +68,7 @@ pip install torch torchvision
 pip install numpy pillow pyyaml safetensors tqdm matplotlib seaborn monai
 ```
 
-仓库已包含 `src/segment_anything/`，主实验无需额外安装 `segment-anything` 包。当前仓库未锁定论文实验环境的具体依赖版本；正式发布时应补充实际使用的 Python、PyTorch、CUDA 版本和 GPU 型号。
+仓库已包含 `src/segment_anything/`，主实验无需额外安装 `segment-anything` 包。
 
 下载 SAM ViT-B 权重：
 
@@ -136,7 +137,6 @@ python train.py
 | `multiclass_head.pth` | 训练结束时导出的分类头参数 |
 | `checkpoints/best_model.pth` | 验证损失最优时的完整 SAM（含 LoRA）、分类头与优化器状态 |
 
-**训练结束导出的两个参数文件与验证集最优 checkpoint 可能来自不同 epoch。** 报告结果时，应说明使用的 epoch 和加载方式。
 
 ## 评估
 
