@@ -1,0 +1,33 @@
+# Downloaded datasets
+/all_dataset/
+/dataset/
+/datasets/
+
+# Pretrained and trained model parameters
+*.pth
+*.pt
+*.ckpt
+*.safetensors
+*.onnx
+
+# Generated experiment outputs
+/training_results/
+/training_logs/
+/test_results/
+/evaluation_paper/
+/runs/
+/wandb/
+*.log
+
+# Python caches and local environments
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.venv/
+venv/
+
+# Local editor and OS files
+.idea/
+.vscode/
+.DS_Store
+._*

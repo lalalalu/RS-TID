@@ -1,0 +1,13 @@
+DATASET:
+  TEST_PATH: ./all_dataset/test
+  TRAIN_PATH: ./all_dataset/train
+  VAL_PATH: ./all_dataset/val
+SAM:
+  CHECKPOINT: ./sam_vit_b_01ec64.pth
+  RANK: 512
+TRAIN:
+  BATCH_SIZE: 1
+  GRADIENT_ACCUMULATION_STEPS: 16
+  LEARNING_RATE: 1e-4
+  NUM_EPOCHS: 50
+  WEIGHT_DECAY: 0
