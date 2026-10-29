@@ -1,6 +1,7 @@
 # SAM-LoRA for Remote Sensing Image Tampering Localization
 
-Paper title: Dataset of RS-TID: A Remote Sensing Tampered Image Dataset for Multi-class Tampering Localization and Detection
+Paper title: RS-TID: A Remote Sensing Tampered Image Dataset for Multi-class
+Tampering Localization and Detection
 
 Pixel-level remote sensing image tampering localization using the Segment Anything Model (SAM ViT-B) and LoRA. The model segments three types of tampered regions: copy-move, splicing, and removal.
 
